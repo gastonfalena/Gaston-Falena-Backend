@@ -35,13 +35,13 @@ app.use(cookieParser());
 
 // app.use("/api/products", productRoutes);
 
-app.post(
-  "/api/refresh-token",
-  refreshTokenMiddleware,
-  (req: express.Request, res: express.Response) => {
-    res.json({ message: "Token actualizado correctamente" });
-  },
-);
+// app.post(
+//   "/api/refresh-token",
+//   refreshTokenMiddleware,
+//   (req: express.Request, res: express.Response) => {
+//     res.json({ message: "Token actualizado correctamente" });
+//   },
+// );
 
 app.get("/", (req, res) => {
   res.send("API funcionando correctamente");
