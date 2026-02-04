@@ -89,9 +89,9 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const jwtAccessSecret = process.env.JWT_SECRET;
-    const jwtAccessExpiresIn = process.env.JWT_EXPIRES_IN!;
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET!;
-    const jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN!;
+    const jwtAccessExpiresIn = process.env.JWT_EXPIRES_IN;
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
+    const jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
 
     const findUser = await User.findOne({ email });
     if (!findUser)
@@ -107,14 +107,14 @@ export const login = async (req: Request, res: Response) => {
 
     const accessToken = jwt.sign(
       { userId: findUser._id.toString(), email: findUser.email },
-      jwtAccessSecret,
-      { expiresIn: jwtAccessExpiresIn },
+      jwtAccessSecret as string,
+      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
     );
 
     const refreshToken = jwt.sign(
       { userId: findUser._id.toString() },
-      jwtRefreshSecret,
-      { expiresIn: jwtRefreshExpiresIn },
+      jwtRefreshSecret as string,
+      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
     );
 
     res.cookie("accessToken", accessToken, {
