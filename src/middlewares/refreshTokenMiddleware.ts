@@ -34,7 +34,7 @@ export const refreshTokenMiddleware = async (
     const newAccessToken = jwt.sign(
       { userId: user._id.toString(), email: user.email },
       jwtAccessSecret,
-      { expiresIn: jwtAccessExpiresIn },
+      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
     );
 
     res.cookie("accessToken", newAccessToken, {
