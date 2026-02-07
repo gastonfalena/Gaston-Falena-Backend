@@ -91,7 +91,6 @@ export const login = async (req: Request, res: Response) => {
     const jwtAccessSecret = process.env.JWT_SECRET;
     const jwtAccessExpiresIn = process.env.JWT_EXPIRES_IN;
     const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
-    const jwtRefreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
 
     const findUser = await User.findOne({ email });
     if (!findUser)
