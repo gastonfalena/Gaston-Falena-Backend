@@ -2,12 +2,12 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
-// import userRoutes from "./routes/userRoutes";
-// import loginRoutes from "./routes/loginRoutes";
-// import productRoutes from "./routes/productRoutes";
-// import cartRoutes from "./routes/cartRoutes";
-// import { authMiddleware } from "./middlewares/authMiddleware";
-// import { refreshTokenMiddleware } from "./middlewares/refreshTokenMiddleware";
+//routes
+import userRoutes from "./routes/userRoutes";
+import loginRoutes from "./routes/loginRoutes";
+import houseRoutes from "./routes/houseRoutes";
+import { authMiddleware } from "./middlewares/authMiddleware";
+import { refreshTokenMiddleware } from "./middlewares/refreshTokenMiddleware";
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -28,20 +28,19 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-// app.use("/api/auth", loginRoutes);
+app.use("/api/auth", loginRoutes);
 
-// app.use("/api/users", authMiddleware, userRoutes);
-// app.use("/api/cart", authMiddleware, cartRoutes);
+app.use("/api/users", authMiddleware, userRoutes);
 
-// app.use("/api/products", productRoutes);
+app.use("/api/houses", authMiddleware, houseRoutes);
 
-// app.post(
-//   "/api/refresh-token",
-//   refreshTokenMiddleware,
-//   (req: express.Request, res: express.Response) => {
-//     res.json({ message: "Token actualizado correctamente" });
-//   },
-// );
+app.post(
+  "/api/refresh-token",
+  refreshTokenMiddleware,
+  (req: express.Request, res: express.Response) => {
+    res.json({ message: "Token actualizado correctamente" });
+  },
+);
 
 app.get("/", (req, res) => {
   res.send("API funcionando correctamente");
