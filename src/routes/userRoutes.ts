@@ -4,7 +4,6 @@ import {
   getUser,
   getUsers,
   updateUser,
-  login,
 } from "../controllers/userController";
 import express from "express";
 import validationMiddleware from "../middlewares/validationMiddleware";

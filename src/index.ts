@@ -6,6 +6,8 @@ import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes";
 import loginRoutes from "./routes/loginRoutes";
 import houseRoutes from "./routes/houseRoutes";
+import containerRoutes from "./routes/containerRoutes";
+import itemRoutes from "./routes/itemRoutes";
 import { authMiddleware } from "./middlewares/authMiddleware";
 import { refreshTokenMiddleware } from "./middlewares/refreshTokenMiddleware";
 import cookieParser from "cookie-parser";
@@ -32,7 +34,11 @@ app.use("/api/auth", loginRoutes);
 
 app.use("/api/users", userRoutes);
 
-app.use("/api/houses", houseRoutes);
+app.use("/api/houses", authMiddleware, houseRoutes);
+
+app.use("/api/containers", authMiddleware, containerRoutes);
+
+app.use("/api/items", authMiddleware, itemRoutes);
 
 app.post(
   "/api/refresh-token",
