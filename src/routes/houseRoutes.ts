@@ -1,6 +1,5 @@
 import { Router } from "express";
 import HouseController from "../controllers/houseController";
-// Importá acá tu middleware de autenticación (el que valida el JWT)
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = Router();

@@ -30,9 +30,9 @@ app.use(cookieParser());
 
 app.use("/api/auth", loginRoutes);
 
-app.use("/api/users", authMiddleware, userRoutes);
+app.use("/api/users", userRoutes);
 
-app.use("/api/houses", authMiddleware, houseRoutes);
+app.use("/api/houses", houseRoutes);
 
 app.post(
   "/api/refresh-token",
