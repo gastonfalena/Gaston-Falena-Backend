@@ -38,7 +38,7 @@ app.use("/api/houses", authMiddleware, houseRoutes);
 
 app.use("/api/containers", authMiddleware, containerRoutes);
 
-app.use("/api/items", authMiddleware, itemRoutes);
+app.use("/api/items", itemRoutes);
 
 app.post(
   "/api/refresh-token",

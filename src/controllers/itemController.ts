@@ -108,7 +108,18 @@ export default class ItemController {
         .json({ message: "Error interno al actualizar item" });
     }
   }
+  async getTotalCount(req: Request, res: Response) {
+    try {
+      const total = await Item.countDocuments();
 
+      return res.status(200).json({
+        message: "Total de items en la plataforma",
+        total: total,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: "Error al obtener estadísticas" });
+    }
+  }
   async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
