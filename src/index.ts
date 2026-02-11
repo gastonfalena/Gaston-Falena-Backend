@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { corsOptions } from "./config/corse";
 import mongoose from "mongoose";
 //routes
 import userRoutes from "./routes/userRoutes";
@@ -17,16 +18,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGO_URI!;
 
-app.use(
-  cors({
-    origin: [
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "http://localhost:3000",
-    ],
-    credentials: true,
-  }),
-);
+app.use(cors(corsOptions));
+
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
