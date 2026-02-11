@@ -13,7 +13,7 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 //Public
-router.post("/", validationMiddleware(CreateUserDto), registerUser);
+router.post("/register", validationMiddleware(CreateUserDto), registerUser);
 // Priv
 router.get("/", authMiddleware, getUsers);
 router.get("/:id", authMiddleware, getUser);
