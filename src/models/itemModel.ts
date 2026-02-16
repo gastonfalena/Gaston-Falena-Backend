@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IItem extends Document {
   name: string;
   description?: string;
-  quantity: number; // <--- 1. AGREGADO PARA TYPESCRIPT
+  quantity: number;
   container: mongoose.Types.ObjectId;
   owner: mongoose.Types.ObjectId;
 }

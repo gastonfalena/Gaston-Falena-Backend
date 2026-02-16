@@ -55,9 +55,42 @@ export default class ContainerController {
 
   // Actualizar nombre
   async update(req: Request, res: Response) {
-    return res.status(501).json({ message: "Not implemented yet" });
-  }
+    try {
+      const { id } = req.params;
+      const userId = (req as any).user.id;
 
+      const dto = plainToInstance(UpdateContainerDto, req.body);
+      const errors = await validate(dto);
+      if (errors.length > 0) return res.status(400).json({ errors });
+
+      const container = await Container.findById(id).populate("house");
+
+      if (!container) {
+        return res.status(404).json({ message: "Container no encontrado" });
+      }
+
+      const houseOwner = (container.house as any).owner.toString();
+      if (houseOwner !== userId) {
+        return res
+          .status(403)
+          .json({ message: "No tienes permiso para editar esto" });
+      }
+
+      container.name = dto.name || container.name;
+
+      await container.save();
+
+      return res.status(200).json({
+        message: "Container actualizado con éxito",
+        container,
+      });
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(500)
+        .json({ message: "Error al actualizar el container" });
+    }
+  }
   // Eliminar
   async delete(req: Request, res: Response) {
     try {
