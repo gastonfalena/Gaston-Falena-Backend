@@ -1,36 +1,42 @@
 import { Request, Response } from "express";
-import { plainToInstance } from "class-transformer";
-import { validate } from "class-validator";
-import { CreateContainerDto } from "../dto/create-container.dto";
-import { UpdateContainerDto } from "../dto/update-container.dto";
 import Container from "../models/containerModel";
 import House from "../models/houseModel";
 
 export default class ContainerController {
   async create(req: Request, res: Response) {
     try {
-      const dto = plainToInstance(CreateContainerDto, req.body);
-      const errors = await validate(dto);
-      if (errors.length > 0) return res.status(400).json({ errors });
+      console.log("--> CREATE CONTAINER - User:", (req as any).user);
+      console.log("--> CREATE CONTAINER - Body:", req.body);
 
+      const { name, houseId } = req.body;
       const userId = (req as any).user.id;
 
-      const house = await House.findOne({ _id: dto.houseId, owner: userId });
+      const house = await House.findOne({ _id: houseId, owner: userId });
+
       if (!house) {
+        console.log("❌ Casa no encontrada o ajena");
         return res
           .status(404)
           .json({ message: "Casa no encontrada o no te pertenece" });
       }
 
+      // 4. Crear y guardar
       const newContainer = new Container({
-        name: dto.name,
-        house: dto.houseId,
+        name: name,
+        house: houseId,
+        owner: userId,
       });
 
       await newContainer.save();
+
+      console.log("✅ Container creado:", newContainer);
       return res.status(201).json(newContainer);
     } catch (error) {
-      return res.status(500).json({ message: "Error al crear container" });
+      // IMPORTANTE: Esto te mostrará el error real en la consola
+      console.error("🔴 ERROR EN CREATE CONTAINER:", error);
+      return res
+        .status(500)
+        .json({ message: "Error al crear container", error });
     }
   }
 
@@ -49,6 +55,7 @@ export default class ContainerController {
       const containers = await Container.find({ house: houseId });
       return res.status(200).json(containers);
     } catch (error) {
+      console.error(error);
       return res.status(500).json({ message: "Error al obtener containers" });
     }
   }
@@ -57,11 +64,8 @@ export default class ContainerController {
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const { name } = req.body; // Tomamos directo del body validado
       const userId = (req as any).user.id;
-
-      const dto = plainToInstance(UpdateContainerDto, req.body);
-      const errors = await validate(dto);
-      if (errors.length > 0) return res.status(400).json({ errors });
 
       const container = await Container.findById(id).populate("house");
 
@@ -76,7 +80,7 @@ export default class ContainerController {
           .json({ message: "No tienes permiso para editar esto" });
       }
 
-      container.name = dto.name || container.name;
+      container.name = name || container.name;
 
       await container.save();
 
@@ -91,6 +95,7 @@ export default class ContainerController {
         .json({ message: "Error al actualizar el container" });
     }
   }
+
   // Eliminar
   async delete(req: Request, res: Response) {
     try {
@@ -108,6 +113,7 @@ export default class ContainerController {
       await Container.deleteOne({ _id: id });
       return res.status(200).json({ message: "Container eliminado" });
     } catch (error) {
+      console.error(error); // Ver error real
       return res.status(500).json({ message: "Error al eliminar" });
     }
   }

@@ -1,8 +1,4 @@
 import { Request, Response } from "express";
-import { plainToInstance } from "class-transformer";
-import { validate } from "class-validator";
-import { CreateItemDto } from "../dto/create-item.dto";
-import { UpdateItemDto } from "../dto/update-item.dto";
 import Item from "../models/itemModel";
 import Container from "../models/containerModel";
 import House from "../models/houseModel";
@@ -10,34 +6,36 @@ import House from "../models/houseModel";
 export default class ItemController {
   async create(req: Request, res: Response) {
     try {
-      const dto = plainToInstance(CreateItemDto, req.body);
-      const errors = await validate(dto);
-      if (errors.length > 0) return res.status(400).json({ errors });
-
+      const { name, quantity, containerId } = req.body;
       const userId = (req as any).user.id;
 
-      const container = await Container.findById(dto.containerId);
-      if (!container)
+      const container = await Container.findById(containerId);
+      if (!container) {
         return res.status(404).json({ message: "Container no existe" });
+      }
 
       const house = await House.findOne({
         _id: container.house,
         owner: userId,
       });
-      if (!house)
+
+      if (!house) {
         return res
           .status(403)
           .json({ message: "No tenés permiso en esta casa" });
+      }
 
       const newItem = new Item({
-        name: dto.name,
-        quantity: dto.quantity || 1,
-        container: dto.containerId,
+        name: name,
+        quantity: quantity || 1,
+        container: containerId,
+        owner: userId,
       });
+
       await newItem.save();
       return res.status(201).json(newItem);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res.status(500).json({ message: "Error al crear item" });
     }
   }
@@ -51,7 +49,12 @@ export default class ItemController {
         return res.status(400).json({ message: "Falta containerId" });
 
       const container = await Container.findById(containerId).populate("house");
-      if (!container || (container.house as any).owner.toString() !== userId) {
+
+      if (
+        !container ||
+        !container.house ||
+        (container.house as any).owner.toString() !== userId
+      ) {
         return res.status(403).json({ message: "Acceso denegado" });
       }
 
@@ -61,20 +64,12 @@ export default class ItemController {
       return res.status(500).json({ message: "Error al listar items" });
     }
   }
+
   async update(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const { name, quantity } = req.body;
       const userId = (req as any).user.id;
-
-      const dto = plainToInstance(UpdateItemDto, req.body);
-      const errors = await validate(dto);
-
-      if (errors.length > 0) {
-        return res.status(400).json({
-          message: "Error de validación",
-          errors: errors.map((err) => Object.values(err.constraints || {})),
-        });
-      }
 
       const item = await Item.findById(id).populate({
         path: "container",
@@ -92,8 +87,9 @@ export default class ItemController {
           .status(403)
           .json({ message: "No tienes permiso para editar este item" });
       }
-      if (dto.name !== undefined) item.name = dto.name;
-      if (dto.quantity !== undefined) item.quantity = dto.quantity;
+
+      if (name !== undefined) item.name = name;
+      if (quantity !== undefined) item.quantity = quantity;
 
       const updatedItem = await item.save();
 
@@ -102,24 +98,12 @@ export default class ItemController {
         data: updatedItem,
       });
     } catch (error) {
-      console.error(error);
       return res
         .status(500)
         .json({ message: "Error interno al actualizar item" });
     }
   }
-  async getTotalCount(req: Request, res: Response) {
-    try {
-      const total = await Item.countDocuments();
 
-      return res.status(200).json({
-        message: "Total de items en la plataforma",
-        total: total,
-      });
-    } catch (error) {
-      return res.status(500).json({ message: "Error al obtener estadísticas" });
-    }
-  }
   async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -144,6 +128,15 @@ export default class ItemController {
       return res.status(200).json({ message: "Item eliminado" });
     } catch (error) {
       return res.status(500).json({ message: "Error al eliminar item" });
+    }
+  }
+
+  async getTotalCount(req: Request, res: Response) {
+    try {
+      const total = await Item.countDocuments();
+      return res.status(200).json({ total });
+    } catch (error) {
+      return res.status(500).json({ message: "Error al obtener estadísticas" });
     }
   }
 }
