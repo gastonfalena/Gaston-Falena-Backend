@@ -1,197 +1,121 @@
 import { Request, Response } from "express";
-import User from "../models/userModel";
-import { CreateUserDto } from "../dto/create-user.dto";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-import { OAuth2Client } from "google-auth-library";
+import userService from "../services/user.service";
 
-dotenv.config();
+const setCookies = (
+  res: Response,
+  accessToken: string,
+  refreshToken: string,
+) => {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 15 * 60 * 1000,
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+};
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const userData: CreateUserDto = req.body;
-    const existingUser = await User.findOne({ email: userData.email });
-    if (existingUser) {
-      return res.status(400).json({ error: "El usuario ya existe" });
-    }
-    const hashPassword = await bcrypt.hash(userData.password, 10);
-    const newUser = await User.create({
-      ...userData,
-      password: hashPassword,
-    });
-    const userResponse: any = { ...newUser.toObject() };
-    delete userResponse.password;
+    const userResponse = await userService.registerUser(req.body);
     res.status(201).json(userResponse);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = error.message === "El usuario ya existe" ? 400 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find().select("-password");
+    const users = await userService.getAllUsers();
     res.status(200).json(users);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getUser = async (req: Request, res: Response) => {
+export const getUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
+    const user = await userService.getUserById(req.params.id as string);
     res.status(200).json(user);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = error.message === "Usuario no encontrado" ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const { id } = req.params;
-    const user = await User.findByIdAndDelete(id);
-    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    await userService.deleteUser(req.params.id as string);
     res.json({ message: "Usuario eliminado correctamente" });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = error.message === "Usuario no encontrado" ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const { id } = req.params;
-    if (req.body.password) {
-      req.body.password = await bcrypt.hash(req.body.password, 10);
-    }
-    const user = await User.findByIdAndUpdate(id, req.body, {
-      new: true,
-    }).select("-password");
-    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    const user = await userService.updateUser(
+      req.params.id as string,
+      req.body,
+    );
     res.status(200).json(user);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = error.message === "Usuario no encontrado" ? 404 : 500;
+    res.status(status).json({ error: error.message });
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
-    const jwtAccessSecret = process.env.JWT_SECRET;
-    const jwtAccessExpiresIn = process.env.JWT_EXPIRES_IN;
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
-    const findUser = await User.findOne({ email });
-    if (!findUser)
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    const isMatch = await bcrypt.compare(password, findUser.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Credenciales inválidas" });
-    if (!jwtAccessSecret || !jwtRefreshSecret) {
-      return res.status(500).json({ message: "JWT no definido" });
-    }
-    const accessToken = jwt.sign(
-      { userId: findUser._id.toString(), email: findUser.email },
-      jwtAccessSecret as string,
-      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
-    );
-    const refreshToken = jwt.sign(
-      { userId: findUser._id.toString() },
-      jwtRefreshSecret as string,
-      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
-    );
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-    });
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-    const userResponse: any = { ...findUser.toObject() };
-    delete userResponse.password;
-    return res.json({
-      message: "Login exitoso",
-      user: userResponse,
-    });
+    const { userResponse, accessToken, refreshToken } =
+      await userService.loginUser(email, password);
+    setCookies(res, accessToken, refreshToken);
+    res.json({ message: "Login exitoso", user: userResponse });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = ["Credenciales inválidas", "Usuario no encontrado"].includes(
+      error.message,
+    )
+      ? 401
+      : 500;
+    res.status(status).json({ message: error.message });
   }
 };
 
-export const logout = async (req: Request, res: Response) => {
+export const logout = async (req: Request, res: Response): Promise<void> => {
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
-  return res.json({ message: "Logout exitoso" });
+  res.json({ message: "Logout exitoso" });
 };
 
 export const googleLogin = async (
   req: Request,
   res: Response,
-): Promise<any> => {
+): Promise<void> => {
   try {
     const { token } = req.body;
-    const jwtAccessSecret = process.env.JWT_SECRET;
-    const jwtAccessExpiresIn = process.env.JWT_EXPIRES_IN;
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
-
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    if (!payload) return res.status(401).json({ message: "Token inválido" });
-
-    const { email, name } = payload;
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({
-        name,
-        email,
-        password: await bcrypt.hash(Math.random().toString(36).slice(-10), 10),
-      });
-    }
-
-    const accessToken = jwt.sign(
-      { userId: user._id.toString(), email: user.email },
-      jwtAccessSecret as string,
-      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user._id.toString() },
-      jwtRefreshSecret as string,
-      { expiresIn: jwtAccessExpiresIn as jwt.SignOptions["expiresIn"] },
-    );
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000,
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    const userResponse: any = { ...user.toObject() };
-    delete userResponse.password;
-
-    return res.json({ message: "Login Google exitoso", user: userResponse });
+    const { userResponse, accessToken, refreshToken } =
+      await userService.googleLogin(token);
+    setCookies(res, accessToken, refreshToken);
+    res.json({ message: "Login Google exitoso", user: userResponse });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    const status = error.message === "Token inválido" ? 401 : 500;
+    res.status(status).json({ message: error.message });
   }
 };
