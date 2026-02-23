@@ -1,120 +1,90 @@
 import { Request, Response } from "express";
-import Container from "../models/containerModel";
-import House from "../models/houseModel";
+import containerService from "../services/container.service";
 
-export default class ContainerController {
-  async create(req: Request, res: Response) {
+class ContainerController {
+  async create(req: Request, res: Response): Promise<any> {
     try {
-      console.log("--> CREATE CONTAINER - User:", (req as any).user);
-      console.log("--> CREATE CONTAINER - Body:", req.body);
-
       const { name, houseId } = req.body;
       const userId = (req as any).user.id;
 
-      const house = await House.findOne({ _id: houseId, owner: userId });
-
-      if (!house) {
-        console.log("❌ Casa no encontrada o ajena");
-        return res
-          .status(404)
-          .json({ message: "Casa no encontrada o no te pertenece" });
-      }
-
-      // 4. Crear y guardar
-      const newContainer = new Container({
-        name: name,
-        house: houseId,
-        owner: userId,
-      });
-
-      await newContainer.save();
-
-      console.log("✅ Container creado:", newContainer);
+      const newContainer = await containerService.createContainer(
+        name,
+        houseId,
+        userId,
+      );
       return res.status(201).json(newContainer);
-    } catch (error) {
-      // IMPORTANTE: Esto te mostrará el error real en la consola
-      console.error("🔴 ERROR EN CREATE CONTAINER:", error);
+    } catch (error: any) {
+      const status =
+        error.message === "Casa no encontrada o no te pertenece" ? 404 : 500;
       return res
-        .status(500)
-        .json({ message: "Error al crear container", error });
+        .status(status)
+        .json({ message: error.message || "Error al crear container" });
     }
   }
 
-  async getAll(req: Request, res: Response) {
+  async getAll(req: Request, res: Response): Promise<any> {
     try {
-      const { houseId } = req.query;
+      const houseId = req.query.houseId as string;
       const userId = (req as any).user.id;
 
       if (!houseId)
         return res.status(400).json({ message: "Falta el houseId" });
 
-      const house = await House.findOne({ _id: houseId, owner: userId });
-      if (!house)
-        return res.status(403).json({ message: "Acceso denegado a esta casa" });
-
-      const containers = await Container.find({ house: houseId });
+      const containers = await containerService.getContainersByHouse(
+        houseId,
+        userId,
+      );
       return res.status(200).json(containers);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "Error al obtener containers" });
+    } catch (error: any) {
+      let status = 500;
+      if (error.message === "Falta el houseId") status = 400;
+      if (error.message === "Acceso denegado a esta casa") status = 403;
+      return res
+        .status(status)
+        .json({ message: error.message || "Error al obtener containers" });
     }
   }
 
-  // Actualizar nombre
-  async update(req: Request, res: Response) {
+  async update(req: Request, res: Response): Promise<any> {
     try {
-      const { id } = req.params;
-      const { name } = req.body; // Tomamos directo del body validado
+      const id = req.params.id as string;
+      const { name } = req.body;
       const userId = (req as any).user.id;
 
-      const container = await Container.findById(id).populate("house");
-
-      if (!container) {
-        return res.status(404).json({ message: "Container no encontrado" });
-      }
-
-      const houseOwner = (container.house as any).owner.toString();
-      if (houseOwner !== userId) {
-        return res
-          .status(403)
-          .json({ message: "No tienes permiso para editar esto" });
-      }
-
-      container.name = name || container.name;
-
-      await container.save();
-
+      const updatedContainer = await containerService.updateContainer(
+        id,
+        name,
+        userId,
+      );
       return res.status(200).json({
         message: "Container actualizado con éxito",
-        container,
+        container: updatedContainer,
       });
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      let status = 500;
+      if (error.message === "Container no encontrado") status = 404;
+      if (error.message === "No tienes permiso para editar esto") status = 403;
       return res
-        .status(500)
-        .json({ message: "Error al actualizar el container" });
+        .status(status)
+        .json({ message: error.message || "Error al actualizar el container" });
     }
   }
 
-  // Eliminar
-  async delete(req: Request, res: Response) {
+  async delete(req: Request, res: Response): Promise<any> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const userId = (req as any).user.id;
 
-      const container = await Container.findById(id).populate("house");
-
-      if (!container || (container.house as any).owner.toString() !== userId) {
-        return res
-          .status(404)
-          .json({ message: "Container no encontrado o sin permisos" });
-      }
-
-      await Container.deleteOne({ _id: id });
+      await containerService.deleteContainer(id, userId);
       return res.status(200).json({ message: "Container eliminado" });
-    } catch (error) {
-      console.error(error); // Ver error real
-      return res.status(500).json({ message: "Error al eliminar" });
+    } catch (error: any) {
+      const status =
+        error.message === "Container no encontrado o sin permisos" ? 404 : 500;
+      return res
+        .status(status)
+        .json({ message: error.message || "Error al eliminar" });
     }
   }
 }
+
+export default new ContainerController();

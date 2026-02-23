@@ -1,5 +1,6 @@
 import userRepository from "../repositories/user.repository";
 import { CreateUserDto } from "../dto/create-user.dto";
+import { MongooseUser } from "../interfaces/user.interfase";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -18,7 +19,9 @@ class UserService {
       password: hashPassword,
     });
 
-    const { password, ...userResponse } = newUser.toObject();
+    const rawUser = newUser.toObject() as unknown as MongooseUser;
+    const { password, ...userResponse } = rawUser;
+
     return userResponse;
   }
 
@@ -38,7 +41,7 @@ class UserService {
     return user;
   }
 
-  async updateUser(id: string, updateData: any) {
+  async updateUser(id: string, updateData: Partial<CreateUserDto>) {
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
@@ -54,7 +57,7 @@ class UserService {
     const isMatch = await bcrypt.compare(passwordRaw, user.password);
     if (!isMatch) throw new Error("Credenciales inválidas");
 
-    return this.generateAuthTokens(user);
+    return this.generateAuthTokens(user as unknown as MongooseUser);
   }
 
   async googleLogin(token: string) {
@@ -81,10 +84,10 @@ class UserService {
       });
     }
 
-    return this.generateAuthTokens(user);
+    return this.generateAuthTokens(user as unknown as MongooseUser);
   }
 
-  private generateAuthTokens(user: any) {
+  private generateAuthTokens(user: MongooseUser) {
     const jwtAccessSecret = process.env.JWT_SECRET as string;
     const jwtAccessExpiresIn = process.env
       .JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"];
@@ -106,7 +109,9 @@ class UserService {
       { expiresIn: jwtAccessExpiresIn },
     );
 
-    const rawUser = user.toObject ? user.toObject() : user;
+    const rawUser = user.toObject
+      ? (user.toObject() as unknown as MongooseUser)
+      : user;
     const { password, ...userResponse } = rawUser;
 
     return { userResponse, accessToken, refreshToken };
