@@ -1,8 +1,9 @@
 import { CorsOptions } from "cors";
 
 const allowedOrigins = [
-  "http://localhost:3000", // backend
-  "http://localhost:5173", // Vite (React)
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://gastonfalena.github.io/Gaston-Falena-Frontend/",
 ];
 
 export const corsOptions: CorsOptions = {
@@ -17,7 +18,7 @@ export const corsOptions: CorsOptions = {
       callback(new Error("No permitido por CORS"));
     }
   },
-  credentials: true, // Permitir cookies (Token)
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
-  allowedHeaders: ["Content-Type", "Authorization"], // Headers permitidos
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
