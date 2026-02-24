@@ -1,11 +1,10 @@
 import { Router } from "express";
-import ContainerController from "../controllers/containerController";
+import containerController from "../controllers/containerController";
 import validationMiddleware from "../middlewares/validationMiddleware";
 import { CreateContainerDto } from "../dto/create-container.dto";
 import { UpdateContainerDto } from "../dto/update-container.dto";
 
 const router = Router();
-const containerController = new ContainerController();
 
 router.post(
   "/",

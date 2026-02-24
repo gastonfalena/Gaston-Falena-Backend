@@ -16,12 +16,10 @@ class HouseController {
       const userId = (req as any).user.id;
       const newHouse = await houseService.createHouse(houseDto, userId);
 
-      return res
-        .status(201)
-        .json({
-          message: "Casa creada y vinculada a tu usuario",
-          data: newHouse,
-        });
+      return res.status(201).json({
+        message: "Casa creada y vinculada a tu usuario",
+        data: newHouse,
+      });
     } catch (error: any) {
       return res
         .status(500)
@@ -54,12 +52,10 @@ class HouseController {
         updateDto,
         userId,
       );
-      return res
-        .status(200)
-        .json({
-          message: "Casa actualizada correctamente",
-          data: updatedHouse,
-        });
+      return res.status(200).json({
+        message: "Casa actualizada correctamente",
+        data: updatedHouse,
+      });
     } catch (error: any) {
       const status =
         error.message === "Casa no encontrada o no tenés permiso" ? 404 : 500;
@@ -75,12 +71,10 @@ class HouseController {
       const userId = (req as any).user.id;
 
       const deletedHouse = await houseService.deleteHouse(id, userId);
-      return res
-        .status(200)
-        .json({
-          message: "Casa eliminada correctamente",
-          id: deletedHouse._id,
-        });
+      return res.status(200).json({
+        message: "Casa eliminada correctamente",
+        id: deletedHouse._id,
+      });
     } catch (error: any) {
       const status =
         error.message ===
