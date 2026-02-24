@@ -1,12 +1,11 @@
 import { Router } from "express";
-import ItemController from "../controllers/itemController";
+import itemController from "../controllers/itemController";
 import validationMiddleware from "../middlewares/validationMiddleware";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { CreateItemDto } from "../dto/create-item.dto";
 import { UpdateItemDto } from "../dto/update-item.dto";
 
 const router = Router();
-const itemController = new ItemController();
 
 //public
 router.get("/total", itemController.getTotalCount);
