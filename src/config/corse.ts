@@ -4,6 +4,8 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "https://gastonfalena.github.io/Gaston-Falena-Frontend/",
+  ,
+  "https://gaston-falena-frontend.vercel.app/",
 ];
 
 export const corsOptions: CorsOptions = {
