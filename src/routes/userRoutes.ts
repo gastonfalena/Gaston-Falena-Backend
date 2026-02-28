@@ -1,28 +1,26 @@
-import {
-  registerUser,
-  deleteUser,
-  getUser,
-  getUsers,
-  updateUser,
-} from "../controllers/userController";
 import express from "express";
+import userController from "../controllers/userController";
 import validationMiddleware from "../middlewares/validationMiddleware";
 import { CreateUserDto } from "../dto/create-user.dto";
 import { UpdateUserDto } from "../dto/update-user.dto";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
-//Public
-router.post("/register", validationMiddleware(CreateUserDto), registerUser);
-// Priv
-router.get("/", authMiddleware, getUsers);
-router.get("/:id", authMiddleware, getUser);
-router.delete("/:id", authMiddleware, deleteUser);
+
+router.post(
+  "/register",
+  validationMiddleware(CreateUserDto),
+  userController.registerUser,
+);
+
+router.get("/", authMiddleware, userController.getUsers);
+router.get("/:id", authMiddleware, userController.getUser);
+router.delete("/:id", authMiddleware, userController.deleteUser);
 router.put(
   "/:id",
   authMiddleware,
   validationMiddleware(UpdateUserDto),
-  updateUser,
+  userController.updateUser,
 );
 
 export default router;

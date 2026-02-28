@@ -1,18 +1,17 @@
-import {
-  registerUser,
-  login,
-  logout,
-  googleLogin,
-} from "../controllers/userController";
 import express from "express";
+import userController from "../controllers/userController";
 import validationMiddleware from "../middlewares/validationMiddleware";
 import { CreateUserDto } from "../dto/create-user.dto";
 
 const router = express.Router();
 
-router.post("/register", validationMiddleware(CreateUserDto), registerUser);
-router.post("/login", login);
-router.post("/logout", logout);
-router.post("/google", googleLogin);
+router.post(
+  "/register",
+  validationMiddleware(CreateUserDto),
+  userController.registerUser,
+);
+router.post("/login", userController.login);
+router.post("/logout", userController.logout);
+router.post("/google", userController.googleLogin);
 
 export default router;
